@@ -9,3 +9,7 @@ extern crate rocket;
 fn index() -> &'static str {
   "Hello, visitor!"
 }
+
+fn main() {
+  rocket::ignite().mount("/", routes![index]).launch;
+}
