@@ -1,0 +1,46 @@
+name: CI
+
+on: [push, pull_request]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: "${{ matrix.os.name }} ${{ matrix.test.name }} (${{ matrix.toolchain }})"
+    continue-on-error: false
+    runs-on: ${{ matrix.os.distro }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - { name: Linux, distro: ubuntu-latest }
+          - { name: Windows, distro: windows-latest }
+          - { name: macOS, distro: macOS-latest }
+        toolchain: [nightly, stable, "1.63"]
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v3
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Rust (${{ matrix.toolchain }})
+        if: matrix.toolchain != 'stable'
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Install Cargo Hack
+        run: cargo +stable install cargo-hack
+        shell: bash
+
+      - name: Check Feature Combinations
+        run: cargo hack check --feature-powerset --no-dev-deps --skip _nightly
+        shell: bash
+
+      - name: Run Tests
+        run: cargo +stable hack test --feature-powerset --skip _nightly
+        shell: bash
